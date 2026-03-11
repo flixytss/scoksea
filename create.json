@@ -1,0 +1,20 @@
+{
+    "project-name": "scok.so",
+    "files": [
+        ["src", ".c"]
+    ],
+    "buildir": "build",
+    "compilers-filter": {
+        ".c": "clang"
+    },
+    "link-args": ["-shared"],
+    "compile-args": {
+        "clang": "-fPIC"
+    },
+    "includes": {
+        "clang": "include"
+    },
+    "extra": {
+        "use-ccache": true
+    }
+}
