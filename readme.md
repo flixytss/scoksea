@@ -73,6 +73,8 @@ Now, after learning how to read, we will write to a socket, how to send messages
     */
 ```
 
+In the client-side, It's almost the same thing, just change the `bind_tcp(&socket, 1);` for `connect_socket(&socket);` and it will connect to the socket that has the ip setted before with `set_tcp_addr`
+
 ## Building
 
 Do:
