@@ -24,17 +24,15 @@ struct tcpclient {
     uint16_t port;
 };
 
-extern void init_tcp(tcpsocket *, unsigned long);
-extern void set_tcp_addr(tcpsocket *, const char *);
-extern void bind_tcp(tcpsocket *, uint16_t);
-extern void connect_socket(tcpsocket *);
+extern int init_tcp(tcpsocket *, unsigned long);
+extern int set_tcp_addr(tcpsocket *, const char *);
+extern int bind_tcp(tcpsocket *, uint16_t);
+extern int connect_socket(tcpsocket *);
 extern int s_read_size(tcpsocket, void *, int);
-extern int s_write_size(tcpsocket, void *, int);
-extern void get_connect(tcpsocket, tcpsocket *);
-extern void set_tcp_struct(tcpsocket *, struct tcpclient *);
-
-#define s_read(socket, obj) s_read_size(socket, obj, sizeof(*(obj)))
-#define s_write(socket, obj) s_write_size(socket, obj, sizeof(*(obj)))
+extern int get_connect(tcpsocket, tcpsocket *);
+extern int set_tcp_struct(tcpsocket *, struct tcpclient *);
+extern int s_write(tcpsocket tcp, void* buf, int siz);
+extern int s_read(tcpsocket tcp, void* buf);
 
 extern void closesocket(tcpsocket);
 

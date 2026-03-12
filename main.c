@@ -10,7 +10,6 @@ int main() {
 
     init_tcp(&socket, 8080);
     set_tcp_addr(&socket, OPENADDRESS);
-
     bind_tcp(&socket, 1);
 
     printf("waiting\n");
@@ -21,11 +20,10 @@ int main() {
         struct tcpclient info;
         set_tcp_struct(&client, &info);
 
-        int32_t num = 0;
-        // s_read_size(client, TO_SOCKET_MESSAGE(num), sizeof(int32_t));
-        s_read(client, TO_SOCKET_MESSAGE(num));
+        char buffer[100];
+        s_read(client, buffer);
 
-        printf("%s %d %d\n", info.ip, info.port, FROM_INT(num));
+        printf("%s:%d: %s\n", info.ip, info.port, buffer);
 
         closesocket(client);
     }

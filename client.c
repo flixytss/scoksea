@@ -14,12 +14,8 @@ int main() {
 
     printf("connected\n");
 
-    int32_t num = TO_INT(2013);
-    // s_write_size(socket, TO_SOCKET_MESSAGE(num), sizeof(int32_t));
-    s_write(socket, TO_SOCKET_MESSAGE(num));
-    printf("sended number: %d\n", num);
-
-    while (1);
+    char buffer[] = "Hello, World!";
+    s_write(socket, buffer, sizeof(buffer));
 
     closesocket(socket);
 

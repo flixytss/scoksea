@@ -57,7 +57,7 @@ Now we get to the fun part, sending a getting messages, to get a message, you wi
     char buffer[/*size*/];
     s_read(client, buffer);
     /*
-        An alternative version of that, is the manual function (s_read_size), that has the same parameters as s_read but it needs a third parameter with the size you want to read
+        An alternative version of that, is the manual function (s_read_size), that has the same parameters as s_read but it needs a third parameter with the size you want to read.
     */
 ```
 If you want to read into an int, you will have to use `TO_SOCKET_MESSAGE` with the int32_t you want to hold the data (It is a macro, that expands to: &your_variable), and finally, to use the int32_t that you getted, use the macro `FROM_INT` with the int32_t and it will make the conversion (`FROM_INT` expands to `ntohl(int32_t)`). 
@@ -67,9 +67,9 @@ If you want to read into an int, you will have to use `TO_SOCKET_MESSAGE` with t
 Now, after learning how to read, we will write to a socket, how to send messages to the client socket, now you'll use `s_write` like this:
 ``` c
     const char buffer[] = "Hello, World!";
-    s_write(client, buffer);
+    s_write(client, buffer, sizeof buffer);
     /*
-        An alternative version of that, is the manual function (s_write_size), that has the same parameters as s_write but it needs a third parameter with the size you want to write
+        Here, you need to put the size of the variable you're gonna send.
     */
 ```
 
