@@ -9,6 +9,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
+#include <sys/epoll.h>
 
 int init_tcp(tcpsocket* tcp, unsigned long port) {
     if ((tcp->_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0) { perror("socket"); return -1; }
@@ -17,6 +19,17 @@ int init_tcp(tcpsocket* tcp, unsigned long port) {
 
     int opt = 1;
     if (setsockopt(tcp->_socket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) { perror("setsockopt"); return -1; }
+
+    /*
+        int flags = fcntl(tcp->_socket, F_GETFL, 0);
+        if (flags == -1) { perror("fcntl"); return -1; }
+        if (fcntl(tcp->_socket, F_SETFL, flags | O_NONBLOCK) == -1) { perror("fcntl"); return -1; }
+
+        Enable non-blocking socket, Tells the system to stop the accept if it late or if it dosen't get any
+        new connection.
+        For efficient, this is disabled
+    */
+
     return 0;
 }
 int set_tcp_addr(tcpsocket* tcp, const char* addr) {
@@ -36,7 +49,7 @@ int bind_tcp(tcpsocket* tcp, uint16_t max) {
 int get_connect(tcpsocket tcp, tcpsocket* buffer) {
     buffer->_len = sizeof(buffer->_socketaddr);
     if ((buffer->_socket = accept(tcp._socket, (struct sockaddr*)&buffer->_socketaddr, &buffer->_len)) < 0) { perror("accept"); return -1; }
-    return 0;
+    return buffer->_socket;
 }
 int connect_socket(tcpsocket* tcp) {
     tcp->_len = sizeof(tcp->_socketaddr);
@@ -62,28 +75,34 @@ ssize_t read_all(tcpsocket tcp, void *buf, size_t len) {
     const int fd = tcp._socket;
 
     while (total < len) {
-        n = read(fd, (char *)buf + total, len - total);
+        n = recv(fd, (char *)buf + total, len - total, 0);
 
         if (n < 0) {
             if (errno == EINTR) continue;
             return -1;
-        };
+        }
         if (n == 0) break;
         total += n;
     }
     return total;
 }
-int s_read_size(tcpsocket tcp, void* buf, int siz) { return read_all(tcp, buf, siz); }
-int s_read(tcpsocket tcp, void* buf) {
-    int32_t ssize = 0;
-    read_all(tcp, TO_SOCKET_MESSAGE(ssize), sizeof(ssize));
-    return read_all(tcp, buf, ssize);
+int s_read(tcpsocket tcp, void* buf, int max_size) {
+    int epfd = epoll_create1(0);
+    struct epoll_event ev, events[1];
+    ev.events = EPOLLIN;
+    ev.data.fd = tcp._socket;
+    epoll_ctl(epfd, EPOLL_CTL_ADD, tcp._socket, &ev);
+
+    int nfds = epoll_wait(epfd, events, 1, 2000);
+
+    if (nfds > 0) {
+        return read_all(tcp, buf, max_size);
+    } else if (nfds == 0) { return -2; }
+    
+    close(epfd);
+    return -1;
 }
-int s_write(tcpsocket tcp, void* buf, int siz) {
-    int32_t ssize = TO_INT(siz);
-    write_all(tcp, TO_SOCKET_MESSAGE(ssize), sizeof(ssize));
-    return write_all(tcp, buf, siz);
-}
+int s_write(tcpsocket tcp, void* buf, int siz) { return write_all(tcp, buf, siz); }
 int set_tcp_struct(tcpsocket* socket, struct tcpclient* tcp) {
     if (inet_ntop(AF_INET, &socket->_socketaddr.sin_addr, tcp->ip, INET_ADDRSTRLEN) == NULL) { perror("inet_ntop"); return -1; }
     tcp->port = ntohs(socket->_socketaddr.sin_port);

@@ -1,6 +1,6 @@
 # ScokSea
 
-This library simplify the sockets use in C/C++. The files main.c and client.c is just an example of the use of this library
+This library simplify the sockets use in C/C++. The files server.c and client.c is just an example of the use of this library
 
 ## Usage
 
@@ -55,10 +55,7 @@ With that, we get the client's data with `set_tcp_struct` and pass it the client
 Now we get to the fun part, sending a getting messages, to get a message, you will need a variable that will hold it and call `s_read` with the socket you want to send it and the information you want to send, to send a array of chars, do:
 ``` c
     char buffer[/*size*/];
-    s_read(client, buffer);
-    /*
-        An alternative version of that, is the manual function (s_read_size), that has the same parameters as s_read but it needs a third parameter with the size you want to read.
-    */
+    s_read(client, buffer, /*size*/);
 ```
 If you want to read into an int, you will have to use `TO_SOCKET_MESSAGE` with the int32_t you want to hold the data (It is a macro, that expands to: &your_variable), and finally, to use the int32_t that you getted, use the macro `FROM_INT` with the int32_t and it will make the conversion (`FROM_INT` expands to `ntohl(int32_t)`). 
 
@@ -67,10 +64,7 @@ If you want to read into an int, you will have to use `TO_SOCKET_MESSAGE` with t
 Now, after learning how to read, we will write to a socket, how to send messages to the client socket, now you'll use `s_write` like this:
 ``` c
     const char buffer[] = "Hello, World!";
-    s_write(client, buffer, sizeof buffer);
-    /*
-        Here, you need to put the size of the variable you're gonna send.
-    */
+    s_write(client, buffer, /*size*/);
 ```
 
 In the client-side, It's almost the same thing, just change the `bind_tcp(&socket, 1);` for `connect_socket(&socket);` and it will connect to the socket that has the ip setted before with `set_tcp_addr`
