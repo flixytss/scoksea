@@ -8,6 +8,7 @@ include_directories(include)
 add_library(scok SHARED src/lib.c)
 
 set_target_properties(scok PROPERTIES OUTPUT_NAME "scok")
+target_link_options(scok PRIVATE -O0)
 
 install(TARGETS scok DESTINATION /usr/lib)
 install(FILES include/scok.h DESTINATION /usr/include)

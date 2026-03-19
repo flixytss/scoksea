@@ -5,17 +5,24 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-int main() {
-    struct tcp socket;
+typedef struct vector2 {
+    int x;
+    int y;
+} vector2;
 
-    init_tcp(&socket, 8080);
-    set_tcp_addr(&socket, "127.0.0.1");
+int main() {
+    struct s_info socket;
+
+    init_tcp(&socket, "127.0.0.1", 5065, UDP);
+    silence_errors();
     connect_socket(&socket);
 
     printf("connected\n");
 
-    char buffer[] = "Hello, World!";
+    char buffer[4] = "GG!";
+    
     s_write(socket, buffer, sizeof(buffer));
+    printf("sended: %s\n", buffer);
 
     closesocket(socket);
 

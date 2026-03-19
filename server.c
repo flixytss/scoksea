@@ -5,27 +5,28 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-int main() {
-    struct tcp socket;
+typedef struct vector2 {
+    int x;
+    int y;
+} vector2;
 
-    init_tcp(&socket, 8080);
-    set_tcp_addr(&socket, OPENADDRESS);
+int main() {
+    struct s_info socket;
+
+    init_tcp(&socket, OPENADDRESS, 5065, UDP);
     bind_tcp(&socket, 1);
+
+    char buffer[4];
 
     printf("waiting\n");
     while (1) {
-        struct tcp client;
-        get_connect(socket, &client);
+        // if (s_wait(socket, IN)) ss_read(*s_get_global(), "GG!", 3);
+        // get_connect(socket);
 
-        struct tcpclient info;
-        set_tcp_struct(&client, &info);
-
-        char buffer[100];
-        s_read(client, buffer);
-
-        printf("%s:%d: %s\n", info.ip, info.port, buffer);
-
-        closesocket(client);
+        s_read(socket, buffer, 3);
+        printf("info: %s\n", buffer);
+        struct s_client info = get_client_struct(s_get_global());
+        printf("connected from : %s:%d\n", info.ip, info.port);
     }
 
     closesocket(socket);
