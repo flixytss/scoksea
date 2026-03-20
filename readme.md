@@ -1,6 +1,6 @@
 # ScokSea
 
-This library simplify the sockets use in C/C++. The files server.c and client.c is just an example of the use of this library
+This library simplify the sockets use in C/C++.
 
 ## Usage
 
