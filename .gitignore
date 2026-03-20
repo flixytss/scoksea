@@ -2,3 +2,5 @@ build/*
 server
 client
 compile_flags.txt
+.vscode
+debug.sh

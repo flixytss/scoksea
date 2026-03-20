@@ -1,8 +1,10 @@
 #include "scok.h"
 
+#include <asm-generic/errno-base.h>
 #include <asm-generic/errno.h>
 #include <errno.h>
 #include <netinet/in.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,7 +30,7 @@ int s_wait(si_socket s_socket, int action) {
     close(epfd);
     return nfds > 0;
 }
-int set_tcp_addr(si_socket* s_socket, const char* addr) {
+int set_socket_addr(si_socket* s_socket, const char* addr) {
     if (strcmp(addr, OPENADDRESS) == 0) {
         s_socket->_socketaddr.sin_addr.s_addr = global_args._mode == UDP ? htonl(INADDR_ANY) : INADDR_ANY;
         return 0;
@@ -36,7 +38,7 @@ int set_tcp_addr(si_socket* s_socket, const char* addr) {
     if ((inet_pton(AF_INET, addr, &s_socket->_socketaddr.sin_addr)) <= 0) { if (global_args._perror) perror("inet_pton"); return -1; }
     return 0;
 }
-int init_tcp(si_socket* s_socket, const char* ip, unsigned long port, int mode) {
+int init_socket(si_socket* s_socket, const char* ip, unsigned long port, int mode) {
     global_args._perror = 1;
     global_args._timeout = -1;
     global_args._mode = mode;
@@ -64,11 +66,11 @@ int init_tcp(si_socket* s_socket, const char* ip, unsigned long port, int mode) 
         new connection. For efficient, this is disabled
     */
 
-    set_tcp_addr(s_socket, ip);
+    set_socket_addr(s_socket, ip);
 
     return 0;
 }
-int bind_tcp(si_socket* s_socket, uint16_t max) {
+int bind_socket(si_socket* s_socket, uint16_t max) {
     s_socket->_len = sizeof(s_socket->_socketaddr);
     if (!s_socket->_socket) return -1;
     if (bind(s_socket->_socket, (struct sockaddr*)&s_socket->_socketaddr, sizeof(s_socket->_socketaddr)) < 0) { if (global_args._perror) perror("socket"); return -1; }
@@ -93,7 +95,7 @@ int connect_socket(si_socket* s_socket) {
     if (global_args._mode == UDP) {
         send(s_socket->_socket, MAGIC_BYTES_UDP, MAGIC_BYTES_UDP_SIZE, 0);
         int timeout_original = global_args._timeout;
-        set_timeout(1000); /* has a 1 second delay when connecting to the udp server */
+        set_timeout(0500); /* has a 1 second delay when connecting to the udp server */
         s_wait(*s_socket, INE);
         if (get_last_event() & ERR) {
             int err;
@@ -117,12 +119,16 @@ ssize_t write_all(si_socket s_socket, void *buf, size_t len) {
     if (!fd) return -1;
 
     while (total < len) {
-        if (global_args._mode != UDP) { n = write(fd, (const char *)buf + total, len - total); }
+        if (global_args._mode != UDP) { n = send(fd, (const char *)buf + total, len - total, MSG_NOSIGNAL); }
         else {
             global_args._global._len = sizeof(global_args._global._socketaddr);
-            n = send(fd, (const char *)buf + total, len - total, 0);
+            n = sendto(fd, (const char *)buf + total, len - total, 0, (struct sockaddr*)&global_args._global._socketaddr, sizeof(global_args._global._socketaddr));
         }
-        if (n <= 0) return -1;
+        if (n < 0) {
+            if (errno == EPIPE) { if (global_args._perror) puts("broken pipe (the server or client disconnected)"); }
+            return errno;
+        }
+        if (n == 0) break;
         total += n;
     }
     return total;
@@ -136,14 +142,14 @@ ssize_t read_all(si_socket s_socket, void *buf, size_t len) {
     while (total < len) {
         if (global_args._mode != UDP) { n = recv(fd, (char *)buf + total, len - total, 0); }
         else { /* fucking udp */
-            global_args._global._len = sizeof(global_args._global._socketaddr);
-            n = recvfrom(fd, (char *)buf + total, len - total, 0, (struct sockaddr*)&global_args._global._socketaddr, &global_args._global._len);
-            if (strncmp(buf, MAGIC_BYTES_UDP, MAGIC_BYTES_UDP_SIZE) == 0) { bzero(buf, len); return 0; }
+            n = recv(fd, (char *)buf + total, len - total, 0);
+            if (strncmp(buf, MAGIC_BYTES_UDP, MAGIC_BYTES_UDP_SIZE) == 0) { memcpy(buf, "magic", 5); return 0; }
         }
 
         if (n < 0) {
             if (errno == EINTR) continue;
-            return -1;
+            if (errno == EPIPE) { if (global_args._perror) puts("broken pipe (the server or client disconnected)"); }
+            return errno;
         }
         if (n == 0) break;
         total += n;
@@ -169,8 +175,18 @@ void set_timeout(unsigned long timeout) { global_args._timeout = timeout; }
     global_args._global._len = sizeof(global_args._global._socketaddr);
     return &global_args._global;
 }
-
-void closesocket(si_socket s_socket) { close(s_socket._socket); }
-
-// udp-zone
-
+void closesocket(si_socket s_socket) {
+    close(s_socket._socket);
+    s_write_with_size(s_socket, (void*)DISCONNECTMSG, DISCONNECTMSG_SIZE);
+    shutdown(s_socket._socket, SHUT_WR);
+}
+int s_write_with_size(si_socket socket, void* buf, int size) {
+    int cons = htonl(size);
+    s_write(socket, &cons, sizeof(cons));
+    return s_write(socket, buf, size);
+}
+int s_read_with_size(si_socket socket, void* buf) {
+    int size;
+    s_read(socket, &size, sizeof(size));
+    return s_read(socket, buf, ntohl(size));
+}

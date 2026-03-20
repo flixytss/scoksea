@@ -29,18 +29,23 @@ struct args {
     struct s_info _global;
 }; struct args global_args;
 
-extern int init_tcp(si_socket* socket, const char* ip, unsigned long port, int mode);
-extern int set_tcp_addr(si_socket* socket, const char* addr);
-extern int bind_tcp(si_socket* socket, uint16_t port);
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern int init_socket(si_socket* socket, const char* ip, unsigned long port, int mode);
+extern int set_socket_addr(si_socket* socket, const char* addr);
+extern int bind_socket(si_socket* socket, uint16_t max);
 extern int connect_socket(si_socket* socket);
 extern si_socket get_connect(si_socket socket);
 extern struct s_client get_client_struct(si_socket* socket);
 extern int s_write(si_socket socket, void* buf, int siz);
 extern int s_read(si_socket socket, void* buf, int siz);
+extern int s_write_with_size(si_socket socket, void* buf, int size);
+extern int s_read_with_size(si_socket socket, void* buf);
 extern void set_timeout(unsigned long timeout);
 extern void silence_errors();
 
-/*  Pauses the program until the socket fd does the wanted action with the global timeout.
+/* Pauses the program until the socket fd does the wanted action with the global timeout.
 */ extern int s_wait(si_socket socket, int action);
 /* An insecure version of s_read, this disables the epoll wait (wait for the message).
 */ extern int ss_read(si_socket socket, void* buf, int max_size);
@@ -50,17 +55,24 @@ extern void silence_errors();
 */ extern int get_last_event();
 
 extern void closesocket(si_socket);
+#ifdef __cplusplus
+}
+#endif
 
 // Wait actions
 #define IN  EPOLLIN
 #define OUT EPOLLOUT
 #define ERR EPOLLERR
+#define HUP EPOLLHUP
 /* listen for errors too
 */ #define INE (IN | ERR)
 
 // UDP connect message
-const char MAGIC_BYTES_UDP[] = { (char)0x2, (char)0x0, (char)0x1, (char)0x3, (char)0x6, (char)0x11 };
+const char MAGIC_BYTES_UDP[] = { (char)0x2013, (char)0x1101, (char)0x6034, (char)0x2001, (char)0x6009, (char)0x1109 };
 #define MAGIC_BYTES_UDP_SIZE    sizeof  MAGIC_BYTES_UDP
+// Disconnect message
+const char DISCONNECTMSG[] = { (char)0x201, (char)0x1106, (char)0x6074, (char)0x2801, (char)0x6019, (char)0x1809 };
+#define DISCONNECTMSG_SIZE    sizeof  DISCONNECTMSG
 
 // TCP UDP
 #define TCP 0

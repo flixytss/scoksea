@@ -14,25 +14,21 @@ server.c:
 #include <unistd.h>
 
 int main() {
-    struct tcp socket;
+    struct s_info socket;
 
-    init_tcp(&socket, 8080);
-    set_tcp_addr(&socket, OPENADDRESS);
-
-    bind_tcp(&socket, 1);
+    init_socket(/* socket pointer */ &socket, /* address */ OPENADDRESS, /* port */ 5065, /* socket mode (TCP or UDP) */ TCP);
+    // set_tcp_addr(&socket, OPENADDRESS); This is now obsolete
+    bind_tcp(/* socket pointer */ &socket, /* max listenings */ 1);
 
     printf("waiting\n");
     while (1) {
-        struct tcp client;
-        get_connect(socket, &client);
+        struct s_info client = get_connect(socket); /* wait for a client */
+        struct s_client info = get_client_struct(&client); /* get client's information */
 
-        struct tcpclient info;
-        set_tcp_struct(&client, &info);
+        char buff[100];
+        s_read(client, buff, 100);
 
-        int32_t num = 0;
-        s_read(client, TO_SOCKET_MESSAGE(num));
-
-        printf("%s %d %d\n", info.ip, info.port, FROM_INT(num));
+        printf("%s:%d: %d\n", info.ip, info.port, buff);
 
         closesocket(client);
     }
@@ -42,22 +38,21 @@ int main() {
     return 0;
 }
 ```
-Here we start declaring the main socket variable with the type of a struct named `tcp`, this is the start to use our socket. First we init the socket with the port we want it to be in, then we set the socket address (`OPENADDRESS` for bind it to any address), and finally we bind the socket (if it is the server side) with the number of max connections we want (if the connections exceed the max, they will get refused).  
+Here we start declaring the main socket variable with the type of a struct named `s_info`, this is the start to use our socket. First we init the socket with the port we want it to be in, then we set the socket address (`OPENADDRESS` for bind it to any address), and finally we bind the socket (if it is the server side) with the number of max connections we want (**if the connections exceed the max, they will get refused**).  
 
-Here we already initialized the socket, now we're listening, if you want to listen to connections always, then use a while. First we start declaring the client variable with the same type as the main socket (`struct tcp`) because it is a socket more, then we get the connection from the socket and set it to the client variable pointer (with the get_connect), it will stop there until there's a in coming connection, if we want the client's data (ip and port) we will declare a variable that will hold the client's data, with the type `struct tcpclient`, tcpclient structure:
+Here we already initialized the socket, now we're listening, if you want to listen to connections always, then use a while. First we start declaring the client variable with the same type as the main socket (`struct s_info`) because it is a socket more, then we get the connection from the socket and set it to the client variable pointer (with the get_connect), it will stop there until there's a in-coming connection, if we want the client's data (ip and port) we will declare a variable that will hold the client's data, with the type `struct s_client`. s_client structure:
 ``` c
 struct tcpclient {
     char ip[INET_ADDRSTRLEN];
     uint16_t port;
 };
 ```
-With that, we get the client's data with `set_tcp_struct` and pass it the client pointer and the variable pointer that will hold the data.  
+With that, we get the client's data with `get_client_struct` and pass it the client pointer and the variable pointer that will hold the data.  
 Now we get to the fun part, sending a getting messages, to get a message, you will need a variable that will hold it and call `s_read` with the socket you want to send it and the information you want to send, to send a array of chars, do:
 ``` c
     char buffer[/*size*/];
     s_read(client, buffer, /*size*/);
 ```
-If you want to read into an int, you will have to use `TO_SOCKET_MESSAGE` with the int32_t you want to hold the data (It is a macro, that expands to: &your_variable), and finally, to use the int32_t that you getted, use the macro `FROM_INT` with the int32_t and it will make the conversion (`FROM_INT` expands to `ntohl(int32_t)`). 
 
 **After using a socket, you need to free it with `closesocket` and pass it the tcp socket**.
 
@@ -66,8 +61,14 @@ Now, after learning how to read, we will write to a socket, how to send messages
     const char buffer[] = "Hello, World!";
     s_write(client, buffer, /*size*/);
 ```
+To send structures, ints, floats, etc.... You have to send it as binary, with the Address-of operator (&) like this: `s_write(client, &/* the variable */, sizeof(/* the variable */));`.
 
-In the client-side, It's almost the same thing, just change the `bind_tcp(&socket, 1);` for `connect_socket(&socket);` and it will connect to the socket that has the ip setted before with `set_tcp_addr`
+In the client-side, It's almost the same thing, just change the `bind_tcp(&socket, 1);` for `connect_socket(&socket);` and it will connect to the socket that has the ip setted before with `init_tcp` (`set_socket_addr` is now obsolete).
+
+### Miscellaneous
+
+There are code examples in the directory called examples
+...
 
 ## Building
 
