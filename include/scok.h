@@ -66,13 +66,11 @@ extern void closesocket(si_socket);
 #define HUP EPOLLHUP
 /* listen for errors too
 */ #define INE (IN | ERR)
+   #define HUPE (HUP | ERR)
 
 // UDP connect message
 const char MAGIC_BYTES_UDP[] = { (char)0x2013, (char)0x1101, (char)0x6034, (char)0x2001, (char)0x6009, (char)0x1109 };
 #define MAGIC_BYTES_UDP_SIZE    sizeof  MAGIC_BYTES_UDP
-// Disconnect message
-const char DISCONNECTMSG[] = { (char)0x201, (char)0x1106, (char)0x6074, (char)0x2801, (char)0x6019, (char)0x1809 };
-#define DISCONNECTMSG_SIZE    sizeof  DISCONNECTMSG
 
 // TCP UDP
 #define TCP 0

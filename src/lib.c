@@ -95,7 +95,7 @@ int connect_socket(si_socket* s_socket) {
     if (global_args._mode == UDP) {
         send(s_socket->_socket, MAGIC_BYTES_UDP, MAGIC_BYTES_UDP_SIZE, 0);
         int timeout_original = global_args._timeout;
-        set_timeout(0500); /* has a 1 second delay when connecting to the udp server */
+        set_timeout(500); /* has a 0.5 second delay when connecting to the udp server */
         s_wait(*s_socket, INE);
         if (get_last_event() & ERR) {
             int err;
@@ -177,7 +177,6 @@ void set_timeout(unsigned long timeout) { global_args._timeout = timeout; }
 }
 void closesocket(si_socket s_socket) {
     close(s_socket._socket);
-    s_write_with_size(s_socket, (void*)DISCONNECTMSG, DISCONNECTMSG_SIZE);
     shutdown(s_socket._socket, SHUT_WR);
 }
 int s_write_with_size(si_socket socket, void* buf, int size) {
