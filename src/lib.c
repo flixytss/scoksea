@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/epoll.h>
+#include <netinet/tcp.h>
 
 int get_last_event() { return global_args._event; }
 int s_wait(si_socket s_socket, int action) {
@@ -56,6 +57,8 @@ int init_socket(si_socket* s_socket, const char* ip, unsigned long port, int mod
 
     int opt = 1;
     if (setsockopt(s_socket->_socket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) { if (global_args._perror) perror("setsockopt"); return -1; }
+    int flag = 1;
+    if (global_args._mode == TCP) if (setsockopt(s_socket->_socket, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag))) { if (global_args._perror) perror("setsockopt"); return -1; }
 
     /*
         int flags = fcntl(tcp->_socket, F_GETFL, 0);
