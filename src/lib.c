@@ -122,7 +122,7 @@ ssize_t write_all(si_socket s_socket, void *buf, size_t len) {
     if (!fd) return -1;
 
     while (total < len) {
-        if (global_args._mode != UDP) { n = send(fd, (const char *)buf + total, len - total, MSG_NOSIGNAL); }
+        if (global_args._mode != UDP) { n = send(fd, (const char *)buf + total, len - total, MSG_NOSIGNAL | TCP_NODELAY); }
         else {
             global_args._global._len = sizeof(global_args._global._socketaddr);
             n = sendto(fd, (const char *)buf + total, len - total, 0, (struct sockaddr*)&global_args._global._socketaddr, sizeof(global_args._global._socketaddr));
